@@ -1,5 +1,6 @@
 import type { SvelteComponent } from "svelte";
-import NotFound from "./NotFound.svelte";
+
+const NotFound = () => import("./NotFound.svelte");
 
 interface RouterParams {
   routes: Route[];
@@ -8,7 +9,7 @@ interface RouterParams {
 
 interface Route {
   url: string;
-  component: typeof SvelteComponent;
+  component: () => Promise<{ default: typeof SvelteComponent }>;
 }
 
 export function createRouter({ routes, target }: RouterParams) {
@@ -16,7 +17,6 @@ export function createRouter({ routes, target }: RouterParams) {
     const target = e.target;
     const anchorTag = findAnchorTag(target as HTMLElement);
 
-    console.log(target, anchorTag);
     if (!anchorTag) return;
     if (anchorTag.target) return;
     e.preventDefault();
@@ -28,29 +28,32 @@ export function createRouter({ routes, target }: RouterParams) {
     matchRoute(targetPathname);
   };
 
+  const popBack = () => {
+    matchRoute(window.location.pathname);
+  };
+
   const matchRoute = (pathname: string) => {
     if (currentComponent) {
       currentComponent.$destroy();
-      window.removeEventListener("click", addRouting);
     }
 
     const matchedRoute = routes.find((route) => {
       return route.url === pathname;
     });
 
-    const matchedComponent = matchedRoute.component ?? NotFound;
+    const matchedComponentPromise = matchedRoute?.component ?? NotFound;
 
-    currentComponent = new matchedComponent({ target });
-
-    document.body.addEventListener("click", addRouting);
-
-    window.addEventListener("popstate", () => {
-      matchRoute(window.location.pathname);
+    matchedComponentPromise().then(({ default: matchedComponent }) => {
+      currentComponent = new matchedComponent({ target });
     });
   };
 
   let currentComponent: SvelteComponent;
   matchRoute(window.location.pathname);
+
+  document.body.addEventListener("click", addRouting);
+
+  window.addEventListener("popstate", popBack);
 }
 
 const findAnchorTag = (el: HTMLElement) => {
