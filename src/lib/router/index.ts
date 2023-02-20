@@ -8,7 +8,7 @@ interface RouterParams {
 
 interface Route {
   url: string;
-  component: SvelteComponent;
+  component: typeof SvelteComponent;
 }
 
 export function createRouter({ routes, target }: RouterParams) {
@@ -28,8 +28,6 @@ export function createRouter({ routes, target }: RouterParams) {
     matchRoute(targetPathname);
   };
 
-  const popMoved = (e: MouseEvent) => {};
-
   const matchRoute = (pathname: string) => {
     if (currentComponent) {
       currentComponent.$destroy();
@@ -40,19 +38,18 @@ export function createRouter({ routes, target }: RouterParams) {
       return route.url === pathname;
     });
 
-    const matchedComponent = matchedRoute?.component ?? NotFound;
+    const matchedComponent = matchedRoute.component ?? NotFound;
 
     currentComponent = new matchedComponent({ target });
 
-    // todo: clean up
     document.body.addEventListener("click", addRouting);
 
-    window.addEventListener("popstate", (e) => {
+    window.addEventListener("popstate", () => {
       matchRoute(window.location.pathname);
     });
   };
 
-  let currentComponent;
+  let currentComponent: SvelteComponent;
   matchRoute(window.location.pathname);
 }
 
