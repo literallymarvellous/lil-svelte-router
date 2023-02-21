@@ -8,8 +8,9 @@ interface RouterParams {
 }
 
 interface Route {
-  url: string;
+  url: RegExp;
   component: () => Promise<{ default: typeof SvelteComponent }>;
+  params?: string[];
 }
 
 export function createRouter({ routes, target }: RouterParams) {
@@ -33,9 +34,23 @@ export function createRouter({ routes, target }: RouterParams) {
   };
 
   const matchRoute = (pathname: string) => {
-    const matchedRoute = routes.find((route) => {
-      return route.url === pathname;
-    });
+    let matchedRouteParams;
+    let matchedRoute;
+
+    for (const route of routes) {
+      const match = pathname.match(route.url);
+      if (match) {
+        matchedRoute = route;
+        const params = {};
+        for (let i = 0; i < route.params.length; i++) {
+          params[route.params[i]] = match[i + 1];
+        }
+        matchedRouteParams = params;
+        break;
+      }
+    }
+
+    console.log(matchedRoute);
 
     const matchedComponentPromise = matchedRoute?.component ?? NotFound;
     showLoadingIndicator();
@@ -45,7 +60,10 @@ export function createRouter({ routes, target }: RouterParams) {
       if (currentComponent) {
         currentComponent.$destroy();
       }
-      currentComponent = new matchedComponent({ target });
+      currentComponent = new matchedComponent({
+        props: matchedRouteParams,
+        target,
+      });
     });
   };
 
