@@ -11,6 +11,7 @@ interface Route {
   url: RegExp;
   component: () => Promise<{ default: typeof SvelteComponent }>;
   params?: string[];
+  paramsMatcher?: ((param: string) => boolean)[];
 }
 
 export function createRouter({ routes, target }: RouterParams) {
@@ -37,15 +38,22 @@ export function createRouter({ routes, target }: RouterParams) {
     let matchedRouteParams: Record<string, number>;
     let matchedRoute: Route;
 
-    for (const route of routes) {
+    match_routing: for (const route of routes) {
       const match = pathname.match(route.url);
       if (match) {
-        matchedRoute = route;
         const params = {};
         const paramsLen = route.params ? route.params.length : 0;
         for (let i = 0; i < paramsLen; i++) {
+          let paramsMatcherFn = route?.paramsMatcher[i];
+          if (paramsMatcherFn) {
+            if (!paramsMatcherFn(match[i + 1])) {
+              continue match_routing;
+            }
+          }
           params[route.params[i]] = match[i + 1];
         }
+
+        matchedRoute = route;
         matchedRouteParams = params;
         break;
       }
