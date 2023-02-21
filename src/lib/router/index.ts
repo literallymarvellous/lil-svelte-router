@@ -34,15 +34,16 @@ export function createRouter({ routes, target }: RouterParams) {
   };
 
   const matchRoute = (pathname: string) => {
-    let matchedRouteParams;
-    let matchedRoute;
+    let matchedRouteParams: Record<string, number>;
+    let matchedRoute: Route;
 
     for (const route of routes) {
       const match = pathname.match(route.url);
       if (match) {
         matchedRoute = route;
         const params = {};
-        for (let i = 0; i < route.params.length; i++) {
+        const paramsLen = route.params ? route.params.length : 0;
+        for (let i = 0; i < paramsLen; i++) {
           params[route.params[i]] = match[i + 1];
         }
         matchedRouteParams = params;
@@ -50,20 +51,27 @@ export function createRouter({ routes, target }: RouterParams) {
       }
     }
 
-    console.log(matchedRoute);
-
     const matchedComponentPromise = matchedRoute?.component ?? NotFound;
     showLoadingIndicator();
 
     matchedComponentPromise().then(({ default: matchedComponent }) => {
       hideLoadingIndicator();
-      if (currentComponent) {
-        currentComponent.$destroy();
+
+      if (currentComponent === matchedComponent) {
+        console.log("matched");
+        currentComponentInstance.$set(matchedRouteParams);
+      } else {
+        console.log("not matched");
+        if (currentComponentInstance) {
+          currentComponentInstance.$destroy();
+        }
+        currentComponentInstance = new matchedComponent({
+          props: matchedRouteParams,
+          target,
+        });
       }
-      currentComponent = new matchedComponent({
-        props: matchedRouteParams,
-        target,
-      });
+
+      currentComponent = matchedComponent;
     });
   };
 
@@ -78,7 +86,8 @@ export function createRouter({ routes, target }: RouterParams) {
     indicator.hide();
   }
 
-  let currentComponent: SvelteComponent;
+  let currentComponent: typeof SvelteComponent;
+  let currentComponentInstance: SvelteComponent;
   matchRoute(window.location.pathname);
 
   document.body.addEventListener("click", addRouting);

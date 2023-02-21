@@ -9,11 +9,8 @@
   });
 
   export async function show() {
-    console.log("show");
     visible = true;
     percentage.set(0, { duration: 0 });
-
-    // await new Promise((resolve) => setTimeout(resolve, 1000));
 
     if (!visible || hiding) return;
 
@@ -33,7 +30,6 @@
   }
 
   export async function hide() {
-    console.log("hide");
     hiding = true;
     if ($percentage > 0) {
       await percentage.set(100, { duration: 200 });
