@@ -8,28 +8,31 @@ createRouter({
     { url: /^\/c\/?$/, component: () => import("./routes/C.svelte") },
     {
       url: /^\/shop\/([^/]+)\/?$/,
-      params: ["shopId"],
-      paramsMatcher: [(shopId) => /^\d+$/.test(shopId)],
+      params: [{ name: "shopId", matching: (shopId) => /^\d+$/.test(shopId) }],
       component: () => import("./routes/Shop.svelte"),
     },
     {
       url: /^\/item\/([^/]+)\/([^/]+)\/?$/,
-      params: ["shopId", "itemId"],
-      paramsMatcher: [
-        (shopId) => /^\d+$/.test(shopId),
-        (itemId) => /^\d+$/.test(itemId),
+      params: [
+        { name: "shopId", matching: (shopId) => /^\d+$/.test(shopId) },
+        { name: "itemId", matching: (itemId) => /^\d+$/.test(itemId) },
       ],
       component: () => import("./routes/Item.svelte"),
     },
     {
       url: /^\/help\/([^/]+)\/([^/]+)\/?$/,
-      params: ["shopId", "itemId"],
-      paramsMatcher: [
-        (shopId) => /^\d+$/.test(shopId),
-        (itemId) => /^\d+$/.test(itemId),
-      ],
-
+      params: [{ name: "shopId" }, { name: "itemId" }],
       component: () => import("./routes/Help.svelte"),
+    },
+    {
+      url: /^\/a(?:\/?|\/(.+)\/?)$/,
+      params: [
+        {
+          name: "rest",
+          isRest: true,
+        },
+      ],
+      component: () => import("./routes/Rest.svelte"),
     },
   ],
   target: document.getElementById("app"),

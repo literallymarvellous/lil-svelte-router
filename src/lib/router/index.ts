@@ -10,8 +10,11 @@ interface RouterParams {
 interface Route {
   url: RegExp;
   component: () => Promise<{ default: typeof SvelteComponent }>;
-  params?: string[];
-  paramsMatcher?: ((param: string) => boolean)[];
+  params?: {
+    name: string;
+    matching?: (param: string) => boolean;
+    isRest?: boolean;
+  }[];
 }
 
 export function createRouter({ routes, target }: RouterParams) {
@@ -44,13 +47,16 @@ export function createRouter({ routes, target }: RouterParams) {
         const params = {};
         const paramsLen = route.params ? route.params.length : 0;
         for (let i = 0; i < paramsLen; i++) {
-          let paramsMatcherFn = route?.paramsMatcher[i];
-          if (paramsMatcherFn) {
-            if (!paramsMatcherFn(match[i + 1])) {
+          const { name, matching, isRest } = route.params[i];
+
+          const paramValue = match[i + 1] ?? "";
+          if (matching) {
+            if (!matching(paramValue)) {
               continue match_routing;
             }
           }
-          params[route.params[i]] = match[i + 1];
+
+          params[name] = isRest ? paramValue.split("/") : paramValue;
         }
 
         matchedRoute = route;
@@ -66,10 +72,8 @@ export function createRouter({ routes, target }: RouterParams) {
       hideLoadingIndicator();
 
       if (currentComponent === matchedComponent) {
-        console.log("matched");
         currentComponentInstance.$set(matchedRouteParams);
       } else {
-        console.log("not matched");
         if (currentComponentInstance) {
           currentComponentInstance.$destroy();
         }
